@@ -11,7 +11,13 @@ import org.springframework.context.annotation.Configuration;
 public class BeanConfiguration {
 
     @Bean
-    public IUserServicePort userServicePort(IUserPersistencePort userPersistencePort, IPasswordEncoderPort passwordEncoderPort) {
+    public IUserServicePort userServicePort(IUserPersistencePort userPersistencePort,
+            IPasswordEncoderPort passwordEncoderPort) {
         return new UserUseCase(userPersistencePort, passwordEncoderPort);
+    }
+
+    @Bean
+    public IDishServicePort dishServicePort(IDishPersistencePort dishPersistencePort) {
+        return new DishUseCase(dishPersistencePort);
     }
 }
