@@ -14,4 +14,5 @@ public interface IUserRepository extends JpaRepository<UserEntity, Long> {
 
     // Opcional por si necesitamos buscar el usuario completo por email más adelante
     Optional<UserEntity> findByEmail(String email);
+
 }

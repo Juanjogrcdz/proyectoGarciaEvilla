@@ -6,6 +6,7 @@ import com.plazoleta.infrastructure.input.rest.mapper.IUserRequestMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,6 +21,8 @@ public class UserController {
         this.userRequestMapper = userRequestMapper;
     }
 
+    // HU1: solo el administrador crea propietarios
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping("/owner")
     public ResponseEntity<Void> createOwner(@Valid @RequestBody UserRequestDto userRequestDto) {
         userServicePort.saveOwner(userRequestMapper.toUser(userRequestDto));

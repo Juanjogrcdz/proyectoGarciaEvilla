@@ -2,6 +2,7 @@ package com.plazoleta.infrastructure.input.rest;
 
 import com.plazoleta.domain.api.IDishServicePort;
 import com.plazoleta.infrastructure.input.rest.dto.DishRequestDto;
+import com.plazoleta.infrastructure.input.rest.dto.DishUpdateRequestDto;
 import com.plazoleta.infrastructure.input.rest.mapper.IDishRequestMapper;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,11 +22,20 @@ public class DishController {
         this.dishRequestMapper = dishRequestMapper;
     }
 
-    // Regla: Solo el propietario de un restaurante puede crear platos[cite: 4]
+    // HU3
     @PreAuthorize("hasRole('PROPIETARIO')")
     @PostMapping
     public ResponseEntity<Void> createDish(@Valid @RequestBody DishRequestDto dishRequestDto) {
         dishServicePort.saveDish(dishRequestMapper.toDish(dishRequestDto));
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    // HU4
+    @PreAuthorize("hasRole('PROPIETARIO')")
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> updateDish(@PathVariable Long id,
+                                           @Valid @RequestBody DishUpdateRequestDto dto) {
+        dishServicePort.updateDish(id, dto.getPrice(), dto.getDescription());
+        return ResponseEntity.ok().build();
     }
 }
