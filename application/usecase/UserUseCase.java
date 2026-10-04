@@ -11,7 +11,6 @@ public class UserUseCase implements IUserServicePort {
     private final IUserPersistencePort userPersistencePort;
     private final IPasswordEncoderPort passwordEncoderPort;
 
-    
     public UserUseCase(IUserPersistencePort userPersistencePort, IPasswordEncoderPort passwordEncoderPort) {
         this.userPersistencePort = userPersistencePort;
         this.passwordEncoderPort = passwordEncoderPort;
@@ -33,5 +32,18 @@ public class UserUseCase implements IUserServicePort {
 
         // Guardar a través del puerto de persistencia
         userPersistencePort.saveUser(user);
+    }
+
+    // HU6: el propietario crea cuentas de empleado
+    @Override
+    public void saveEmployee(User employee) {
+        // Cifrar la clave con BCrypt (nunca se guarda en texto plano)
+        employee.setPassword(passwordEncoderPort.encode(employee.getPassword()));
+
+        // El rol lo decide el sistema, nunca el cliente
+        Role employeeRole = new Role(3L, "ROLE_EMPLEADO", "Empleado de restaurante");
+        employee.setRole(employeeRole);
+
+        userPersistencePort.saveUser(employee);
     }
 }

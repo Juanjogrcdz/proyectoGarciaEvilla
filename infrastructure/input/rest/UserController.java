@@ -1,6 +1,7 @@
 package com.plazoleta.infrastructure.input.rest;
 
 import com.plazoleta.domain.api.IUserServicePort;
+import com.plazoleta.infrastructure.input.rest.dto.EmployeeRequestDto;
 import com.plazoleta.infrastructure.input.rest.dto.UserRequestDto;
 import com.plazoleta.infrastructure.input.rest.mapper.IUserRequestMapper;
 import jakarta.validation.Valid;
@@ -26,6 +27,14 @@ public class UserController {
     @PostMapping("/owner")
     public ResponseEntity<Void> createOwner(@Valid @RequestBody UserRequestDto userRequestDto) {
         userServicePort.saveOwner(userRequestMapper.toUser(userRequestDto));
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    // HU6: solo el propietario crea empleados
+    @PreAuthorize("hasRole('PROPIETARIO')")
+    @PostMapping("/employee")
+    public ResponseEntity<Void> createEmployee(@Valid @RequestBody EmployeeRequestDto employeeRequestDto) {
+        userServicePort.saveEmployee(userRequestMapper.toEmployee(employeeRequestDto));
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }
