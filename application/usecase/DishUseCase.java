@@ -39,23 +39,42 @@ public class DishUseCase implements IDishServicePort {
     public void updateDish(Long dishId, Integer price, String description) {
         validatePrice(price);
 
-        Dish dish = dishPersistencePort.findById(dishId);
-        if (dish == null) {
-            throw new IllegalArgumentException("El plato no existe");
-        }
-
-        Restaurant restaurant = getRestaurantOrThrow(dish.getRestaurantId());
-        validateOwnership(restaurant);
+        Dish dish = getDishOrThrow(dishId);
+        validateOwnership(getRestaurantOrThrow(dish.getRestaurantId()));
 
         dish.setPrice(price);
         dish.setDescription(description);
-        dishPersistencePort.saveDish(dish);   // tiene id, así que JPA hace UPDATE
+        dishPersistencePort.saveDish(dish);
     }
+
+    // HU7: habilitar / deshabilitar (el plato NO se borra, solo cambia su estado)
+    @Override
+    public void updateDishStatus(Long dishId, Boolean active) {
+        if (active == null) {
+            throw new IllegalArgumentException("El estado del plato es obligatorio");
+        }
+
+        Dish dish = getDishOrThrow(dishId);
+        validateOwnership(getRestaurantOrThrow(dish.getRestaurantId()));
+
+        dish.setActive(active);
+        dishPersistencePort.saveDish(dish);
+    }
+
+    // ----- helpers compartidos por HU3, HU4 y HU7 -----
 
     private void validatePrice(Integer price) {
         if (price == null || price <= 0) {
             throw new IllegalArgumentException("El precio debe ser mayor a 0");
         }
+    }
+
+    private Dish getDishOrThrow(Long dishId) {
+        Dish dish = dishPersistencePort.findById(dishId);
+        if (dish == null) {
+            throw new IllegalArgumentException("El plato no existe");
+        }
+        return dish;
     }
 
     private Restaurant getRestaurantOrThrow(Long restaurantId) {

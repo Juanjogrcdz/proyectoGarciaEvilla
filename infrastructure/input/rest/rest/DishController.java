@@ -2,6 +2,7 @@ package com.plazoleta.infrastructure.input.rest;
 
 import com.plazoleta.domain.api.IDishServicePort;
 import com.plazoleta.infrastructure.input.rest.dto.DishRequestDto;
+import com.plazoleta.infrastructure.input.rest.dto.DishStatusRequestDto;
 import com.plazoleta.infrastructure.input.rest.dto.DishUpdateRequestDto;
 import com.plazoleta.infrastructure.input.rest.mapper.IDishRequestMapper;
 import jakarta.validation.Valid;
@@ -36,6 +37,15 @@ public class DishController {
     public ResponseEntity<Void> updateDish(@PathVariable Long id,
                                            @Valid @RequestBody DishUpdateRequestDto dto) {
         dishServicePort.updateDish(id, dto.getPrice(), dto.getDescription());
+        return ResponseEntity.ok().build();
+    }
+
+    // HU7: PATCH porque cambia un solo atributo del plato
+    @PreAuthorize("hasRole('PROPIETARIO')")
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateDishStatus(@PathVariable Long id,
+                                                 @Valid @RequestBody DishStatusRequestDto dto) {
+        dishServicePort.updateDishStatus(id, dto.getActive());
         return ResponseEntity.ok().build();
     }
 }

@@ -1,6 +1,7 @@
 package com.plazoleta.infrastructure.input.rest;
 
 import com.plazoleta.domain.api.IUserServicePort;
+import com.plazoleta.infrastructure.input.rest.dto.ClientRequestDto;
 import com.plazoleta.infrastructure.input.rest.dto.EmployeeRequestDto;
 import com.plazoleta.infrastructure.input.rest.dto.UserRequestDto;
 import com.plazoleta.infrastructure.input.rest.mapper.IUserRequestMapper;
@@ -35,6 +36,13 @@ public class UserController {
     @PostMapping("/employee")
     public ResponseEntity<Void> createEmployee(@Valid @RequestBody EmployeeRequestDto employeeRequestDto) {
         userServicePort.saveEmployee(userRequestMapper.toEmployee(employeeRequestDto));
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    // HU8: PÚBLICO (sin @PreAuthorize); se abre en SecurityConfig con permitAll
+    @PostMapping("/client")
+    public ResponseEntity<Void> createClient(@Valid @RequestBody ClientRequestDto clientRequestDto) {
+        userServicePort.saveClient(userRequestMapper.toClient(clientRequestDto));
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

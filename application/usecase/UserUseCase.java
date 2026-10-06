@@ -37,13 +37,19 @@ public class UserUseCase implements IUserServicePort {
     // HU6: el propietario crea cuentas de empleado
     @Override
     public void saveEmployee(User employee) {
-        // Cifrar la clave con BCrypt (nunca se guarda en texto plano)
-        employee.setPassword(passwordEncoderPort.encode(employee.getPassword()));
+        registerWithRole(employee, new Role(3L, "ROLE_EMPLEADO", "Empleado de restaurante"));
+    }
 
-        // El rol lo decide el sistema, nunca el cliente
-        Role employeeRole = new Role(3L, "ROLE_EMPLEADO", "Empleado de restaurante");
-        employee.setRole(employeeRole);
+    // HU8: el cliente crea su propia cuenta
+    @Override
+    public void saveClient(User client) {
+        registerWithRole(client, new Role(4L, "ROLE_CLIENTE", "Cliente de la plazoleta"));
+    }
 
-        userPersistencePort.saveUser(employee);
+    // Receta común: cifrar clave + asignar el rol que decide el SISTEMA + guardar
+    private void registerWithRole(User user, Role role) {
+        user.setPassword(passwordEncoderPort.encode(user.getPassword()));
+        user.setRole(role);
+        userPersistencePort.saveUser(user);
     }
 }

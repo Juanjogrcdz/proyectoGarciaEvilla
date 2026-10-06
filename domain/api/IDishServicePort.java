@@ -5,4 +5,5 @@ import com.plazoleta.domain.model.Dish;
 public interface IDishServicePort {
     void saveDish(Dish dish);
     void updateDish(Long dishId, Integer price, String description);
+    void updateDishStatus(Long dishId, Boolean active);   // HU7
 }
