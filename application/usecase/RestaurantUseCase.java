@@ -5,11 +5,13 @@ import com.plazoleta.domain.model.Restaurant;
 import com.plazoleta.domain.model.User;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserPersistencePort;
+import java.util.List;
 
 public class RestaurantUseCase implements IRestaurantServicePort {
 
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IUserPersistencePort userPersistencePort;
+    private static final int MAX_PAGE_SIZE = 100; 
 
     public RestaurantUseCase(IRestaurantPersistencePort restaurantPersistencePort,
                              IUserPersistencePort userPersistencePort) {
@@ -43,5 +45,16 @@ public class RestaurantUseCase implements IRestaurantServicePort {
             return false;
         }
         return user.getRole().getName().replaceFirst("^ROLE_", "").equalsIgnoreCase("PROPIETARIO");
+    }
+     @Override
+    public List<Restaurant> listRestaurants(int page, int size) {
+        if (page < 0) {
+            throw new IllegalArgumentException("La página no puede ser negativa");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "El tamaño de página debe estar entre 1 y " + MAX_PAGE_SIZE);
+        }
+        return restaurantPersistencePort.findAllOrderedByName(page, size);
     }
 }
