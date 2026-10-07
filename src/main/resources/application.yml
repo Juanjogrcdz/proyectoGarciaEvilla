@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: plazoleta
+
+  datasource:
+    # En memoria: la base se crea al arrancar y se BORRA al apagar la app (ideal para empezar).
+    # Para que los datos sobrevivan a los reinicios, cambia a:
+    #   url: jdbc:h2:file:./data/plazoleta;DB_CLOSE_ON_EXIT=FALSE
+    # y pon ddl-auto: update
+    url: jdbc:h2:mem:plazoleta;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  h2:
+    console:
+      enabled: true          # SOLO desarrollo
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Hibernate crea las tablas a partir de tus @Entity
+    show-sql: true
+    open-in-view: false
+    # data.sql debe correr DESPUÉS de que Hibernate cree las tablas
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always           # ejecuta src/main/resources/data.sql
+
+jwt:
+  # SECRETO DE DESARROLLO. En producción va en la variable de entorno JWT_SECRET.
+  # Para generar otro:  openssl rand -base64 32
+  secret: ${JWT_SECRET:hGTys/gKVaAJ0VUaLUYIVD1VaGIVt5qPwnYq4xSZkog=}
+  expiration-ms: 3600000     # 1 hora
+
+server:
+  port: 8080
