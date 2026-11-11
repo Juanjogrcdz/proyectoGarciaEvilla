@@ -31,11 +31,13 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // HU6: solo el propietario crea empleados
+    // HU6 + HU12: solo el propietario crea empleados, y los asigna a su restaurante
     @PreAuthorize("hasRole('PROPIETARIO')")
     @PostMapping("/employee")
     public ResponseEntity<Void> createEmployee(@Valid @RequestBody EmployeeRequestDto employeeRequestDto) {
-        userServicePort.saveEmployee(userRequestMapper.toEmployee(employeeRequestDto));
+        userServicePort.saveEmployee(
+                userRequestMapper.toEmployee(employeeRequestDto),
+                employeeRequestDto.getRestaurantId());
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 

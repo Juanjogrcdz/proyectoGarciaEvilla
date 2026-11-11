@@ -2,6 +2,7 @@ package com.plazoleta.infrastructure.output.adapter;
 
 import com.plazoleta.domain.model.User;
 import com.plazoleta.domain.spi.IUserPersistencePort;
+import com.plazoleta.infrastructure.output.jpa.entity.UserEntity;
 import com.plazoleta.infrastructure.output.jpa.mapper.IUserEntityMapper;
 import com.plazoleta.infrastructure.output.jpa.repository.IUserRepository;
 import org.springframework.stereotype.Component;
@@ -19,9 +20,10 @@ public class UserAdapter implements IUserPersistencePort {
         this.userEntityMapper = userEntityMapper;
     }
 
-    @Override
-    public void saveUser(User user) {
-        userRepository.save(userEntityMapper.toEntity(user));
+       @Override
+    public User saveUser(User user) {
+        UserEntity saved = userRepository.save(userEntityMapper.toEntity(user));
+        return userEntityMapper.toModel(saved);   // ya trae el id generado
     }
 
     @Override

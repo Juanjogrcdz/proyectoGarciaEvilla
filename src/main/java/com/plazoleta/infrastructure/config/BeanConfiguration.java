@@ -11,6 +11,7 @@ import com.plazoleta.domain.api.IUserServicePort;
 import com.plazoleta.domain.spi.IDishPersistencePort;
 import com.plazoleta.domain.spi.IOrderPersistencePort;
 import com.plazoleta.domain.spi.IPasswordEncoderPort;
+import com.plazoleta.domain.spi.IRestaurantEmployeePersistencePort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserContextPort;
 import com.plazoleta.domain.spi.IUserPersistencePort;
@@ -22,8 +23,12 @@ public class BeanConfiguration {
 
     @Bean
     public IUserServicePort userServicePort(IUserPersistencePort userPersistencePort,
-                                            IPasswordEncoderPort passwordEncoderPort) {
-        return new UserUseCase(userPersistencePort, passwordEncoderPort);
+                                            IPasswordEncoderPort passwordEncoderPort,
+                                            IRestaurantPersistencePort restaurantPersistencePort,
+                                            IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
+                                            IUserContextPort userContextPort) {
+        return new UserUseCase(userPersistencePort, passwordEncoderPort, restaurantPersistencePort,
+                restaurantEmployeePersistencePort, userContextPort);
     }
 
     @Bean
@@ -43,8 +48,9 @@ public class BeanConfiguration {
     public IOrderServicePort orderServicePort(IOrderPersistencePort orderPersistencePort,
                                               IRestaurantPersistencePort restaurantPersistencePort,
                                               IDishPersistencePort dishPersistencePort,
+                                              IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
                                               IUserContextPort userContextPort) {
-        return new OrderUseCase(orderPersistencePort, restaurantPersistencePort,
-                dishPersistencePort, userContextPort);
+        return new OrderUseCase(orderPersistencePort, restaurantPersistencePort, dishPersistencePort,
+                restaurantEmployeePersistencePort, userContextPort);
     }
 }

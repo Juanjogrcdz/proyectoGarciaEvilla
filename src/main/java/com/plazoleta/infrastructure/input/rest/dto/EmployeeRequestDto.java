@@ -26,6 +26,9 @@ public class EmployeeRequestDto {
     @NotBlank(message = "La clave es obligatoria")
     private String password;
 
+    @NotNull(message = "El restaurante del empleado es obligatorio")
+    private Long restaurantId;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public String getLastName() { return lastName; }
@@ -38,4 +41,6 @@ public class EmployeeRequestDto {
     public void setEmail(String email) { this.email = email; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    public Long getRestaurantId() { return restaurantId; }
+    public void setRestaurantId(Long restaurantId) { this.restaurantId = restaurantId; }
 }

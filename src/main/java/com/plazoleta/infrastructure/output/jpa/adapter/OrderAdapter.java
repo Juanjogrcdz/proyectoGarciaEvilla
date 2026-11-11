@@ -7,6 +7,9 @@ import com.plazoleta.infrastructure.output.jpa.entity.OrderEntity;
 import com.plazoleta.infrastructure.output.jpa.mapper.IOrderEntityMapper;
 import com.plazoleta.infrastructure.output.jpa.repository.IOrderRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 
@@ -30,5 +33,16 @@ public class OrderAdapter implements IOrderPersistencePort {
     @Override
     public boolean existsByClientIdAndStatusIn(Long clientId, List<OrderStatus> statuses) {
         return orderRepository.existsByClientIdAndStatusIn(clientId, statuses);
+    }
+      @Override
+    public List<Order> findByRestaurantIdAndStatus(Long restaurantId, OrderStatus status, int page, int size) {
+        // Del más antiguo al más reciente: es una cola, el primero en llegar se atiende primero
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("createdAt")));
+
+        return orderRepository.findByRestaurantIdAndStatus(restaurantId, status, pageable)
+                .getContent()
+                .stream()
+                .map(orderEntityMapper::toModel)
+                .toList();
     }
 }

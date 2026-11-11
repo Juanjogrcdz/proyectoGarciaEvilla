@@ -8,4 +8,5 @@ import java.util.List;
 public interface IOrderPersistencePort {
     Order saveOrder(Order order);
     boolean existsByClientIdAndStatusIn(Long clientId, List<OrderStatus> statuses);
+    List<Order> findByRestaurantIdAndStatus(Long restaurantId, OrderStatus status, int page, int size);
 }

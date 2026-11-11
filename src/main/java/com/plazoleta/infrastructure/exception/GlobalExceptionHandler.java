@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
+import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,4 +49,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleOrderInProgress(ClientHasOrderInProgressException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
+    // 403: es un empleado, pero todavía no está asignado a ningún restaurante
+    @ExceptionHandler(EmployeeWithoutRestaurantException.class)
+    public ResponseEntity<Map<String, String>> handleEmployeeWithoutRestaurant(EmployeeWithoutRestaurantException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+    
 }

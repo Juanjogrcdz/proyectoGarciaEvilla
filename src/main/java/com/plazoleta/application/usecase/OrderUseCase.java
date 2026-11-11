@@ -2,17 +2,21 @@ package com.plazoleta.application.usecase;
 
 import com.plazoleta.domain.api.IOrderServicePort;
 import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
+import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
 import com.plazoleta.domain.model.Dish;
 import com.plazoleta.domain.model.Order;
 import com.plazoleta.domain.model.OrderItem;
 import com.plazoleta.domain.model.OrderStatus;
 import com.plazoleta.domain.spi.IDishPersistencePort;
 import com.plazoleta.domain.spi.IOrderPersistencePort;
+import com.plazoleta.domain.spi.IRestaurantEmployeePersistencePort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserContextPort;
+import com.plazoleta.domain.validation.PaginationValidator;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class OrderUseCase implements IOrderServicePort {
@@ -20,15 +24,18 @@ public class OrderUseCase implements IOrderServicePort {
     private final IOrderPersistencePort orderPersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IDishPersistencePort dishPersistencePort;
+    private final IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort;
     private final IUserContextPort userContextPort;
 
     public OrderUseCase(IOrderPersistencePort orderPersistencePort,
                         IRestaurantPersistencePort restaurantPersistencePort,
                         IDishPersistencePort dishPersistencePort,
+                        IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
                         IUserContextPort userContextPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
+        this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
         this.userContextPort = userContextPort;
     }
 
@@ -57,6 +64,24 @@ public class OrderUseCase implements IOrderServicePort {
         order.setCreatedAt(LocalDateTime.now());
 
         return orderPersistencePort.saveOrder(order);
+    }
+
+    // HU12: el empleado ve SOLO los pedidos del restaurante donde trabaja
+    @Override
+    public List<Order> listOrdersByStatus(OrderStatus status, int page, int size) {
+        PaginationValidator.validate(page, size);
+
+        if (status == null) {
+            throw new IllegalArgumentException("El estado es obligatorio");
+        }
+
+        Long employeeId = userContextPort.getCurrentUserId();
+        Long restaurantId = restaurantEmployeePersistencePort.findRestaurantIdByEmployeeId(employeeId);
+        if (restaurantId == null) {
+            throw new EmployeeWithoutRestaurantException();
+        }
+
+        return orderPersistencePort.findByRestaurantIdAndStatus(restaurantId, status, page, size);
     }
 
     private void validateItems(Order order) {
