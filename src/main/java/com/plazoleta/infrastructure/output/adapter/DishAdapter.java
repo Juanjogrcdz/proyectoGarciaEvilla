@@ -5,6 +5,12 @@ import com.plazoleta.domain.spi.IDishPersistencePort;
 import com.plazoleta.infrastructure.output.jpa.mapper.IDishEntityMapper;
 import com.plazoleta.infrastructure.output.jpa.repository.IDishRepository;
 import org.springframework.stereotype.Component;
+import com.plazoleta.infrastructure.output.jpa.entity.DishEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import java.util.List;
 
 @Component
 public class DishAdapter implements IDishPersistencePort {
@@ -31,5 +37,22 @@ public class DishAdapter implements IDishPersistencePort {
         return dishRepository.findById(id)
                 .map(dishEntityMapper::toModel)
                 .orElse(null);
+    }
+    @Override
+    public List<Dish> findActiveByRestaurant(Long restaurantId, String category, int page, int size) {
+        // Menú agrupado por categoría y, dentro de cada una, por nombre
+        Pageable pageable = PageRequest.of(page, size, Sort.by(
+                Sort.Order.asc("category").ignoreCase(),
+                Sort.Order.asc("name").ignoreCase()));
+
+        Page<DishEntity> result = (category == null)
+                ? dishRepository.findByRestaurantIdAndActiveTrue(restaurantId, pageable)
+                : dishRepository.findByRestaurantIdAndActiveTrueAndCategoryIgnoreCase(
+                        restaurantId, category, pageable);
+
+        return result.getContent()
+                .stream()
+                .map(dishEntityMapper::toModel)
+                .toList();
     }
 }

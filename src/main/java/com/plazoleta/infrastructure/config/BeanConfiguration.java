@@ -1,12 +1,15 @@
 package com.plazoleta.infrastructure.config;
 
 import com.plazoleta.application.usecase.DishUseCase;
+import com.plazoleta.application.usecase.OrderUseCase;
 import com.plazoleta.application.usecase.RestaurantUseCase;
 import com.plazoleta.application.usecase.UserUseCase;
 import com.plazoleta.domain.api.IDishServicePort;
+import com.plazoleta.domain.api.IOrderServicePort;
 import com.plazoleta.domain.api.IRestaurantServicePort;
 import com.plazoleta.domain.api.IUserServicePort;
 import com.plazoleta.domain.spi.IDishPersistencePort;
+import com.plazoleta.domain.spi.IOrderPersistencePort;
 import com.plazoleta.domain.spi.IPasswordEncoderPort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserContextPort;
@@ -34,5 +37,14 @@ public class BeanConfiguration {
                                             IRestaurantPersistencePort restaurantPersistencePort,
                                             IUserContextPort userContextPort) {
         return new DishUseCase(dishPersistencePort, restaurantPersistencePort, userContextPort);
+    }
+
+    @Bean
+    public IOrderServicePort orderServicePort(IOrderPersistencePort orderPersistencePort,
+                                              IRestaurantPersistencePort restaurantPersistencePort,
+                                              IDishPersistencePort dishPersistencePort,
+                                              IUserContextPort userContextPort) {
+        return new OrderUseCase(orderPersistencePort, restaurantPersistencePort,
+                dishPersistencePort, userContextPort);
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DataIntegrityViolationException;
+import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -39,5 +40,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleDuplicates(DataIntegrityViolationException ex) {
         return build(HttpStatus.CONFLICT,
                 "Los datos ya existen o violan una restricción (¿correo o documento repetido?)");
+    }
+    
+
+    // 409: el pedido choca con el estado actual del cliente (ya tiene uno en proceso)
+    @ExceptionHandler(ClientHasOrderInProgressException.class)
+    public ResponseEntity<Map<String, String>> handleOrderInProgress(ClientHasOrderInProgressException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
     }
 }

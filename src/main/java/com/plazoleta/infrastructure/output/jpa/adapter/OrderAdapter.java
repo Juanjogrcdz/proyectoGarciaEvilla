@@ -1,0 +1,34 @@
+package com.plazoleta.infrastructure.output.jpa.adapter;
+
+import com.plazoleta.domain.model.Order;
+import com.plazoleta.domain.model.OrderStatus;
+import com.plazoleta.domain.spi.IOrderPersistencePort;
+import com.plazoleta.infrastructure.output.jpa.entity.OrderEntity;
+import com.plazoleta.infrastructure.output.jpa.mapper.IOrderEntityMapper;
+import com.plazoleta.infrastructure.output.jpa.repository.IOrderRepository;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class OrderAdapter implements IOrderPersistencePort {
+
+    private final IOrderRepository orderRepository;
+    private final IOrderEntityMapper orderEntityMapper;
+
+    public OrderAdapter(IOrderRepository orderRepository, IOrderEntityMapper orderEntityMapper) {
+        this.orderRepository = orderRepository;
+        this.orderEntityMapper = orderEntityMapper;
+    }
+
+    @Override
+    public Order saveOrder(Order order) {
+        OrderEntity saved = orderRepository.save(orderEntityMapper.toEntity(order));
+        return orderEntityMapper.toModel(saved);   // ya trae el id generado
+    }
+
+    @Override
+    public boolean existsByClientIdAndStatusIn(Long clientId, List<OrderStatus> statuses) {
+        return orderRepository.existsByClientIdAndStatusIn(clientId, statuses);
+    }
+}

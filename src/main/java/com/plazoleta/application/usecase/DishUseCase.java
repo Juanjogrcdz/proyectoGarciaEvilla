@@ -7,6 +7,8 @@ import com.plazoleta.domain.model.Restaurant;
 import com.plazoleta.domain.spi.IDishPersistencePort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserContextPort;
+import com.plazoleta.domain.validation.PaginationValidator;
+import java.util.List;
 
 public class DishUseCase implements IDishServicePort {
 
@@ -90,5 +92,15 @@ public class DishUseCase implements IDishServicePort {
         if (!restaurant.getOwnerId().equals(currentUserId)) {
             throw new NotRestaurantOwnerException();
         }
+    }
+    @Override
+    public List<Dish> listDishes(Long restaurantId, String category, int page, int size) {
+        PaginationValidator.validate(page, size);
+        getRestaurantOrThrow(restaurantId);   // 400 si el restaurante no existe
+
+        // Una categoría vacía significa "sin filtro"
+        String categoryFilter = (category == null || category.isBlank()) ? null : category.trim();
+
+        return dishPersistencePort.findActiveByRestaurant(restaurantId, categoryFilter, page, size);
     }
 }
