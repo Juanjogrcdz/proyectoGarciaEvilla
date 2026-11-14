@@ -3,6 +3,8 @@ package com.plazoleta.application.usecase;
 import com.plazoleta.domain.api.IOrderServicePort;
 import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
 import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
+import com.plazoleta.domain.exception.InvalidOrderStatusException;
+import com.plazoleta.domain.exception.OrderOutsideEmployeeRestaurantException;
 import com.plazoleta.domain.model.Dish;
 import com.plazoleta.domain.model.Order;
 import com.plazoleta.domain.model.OrderItem;
@@ -75,13 +77,50 @@ public class OrderUseCase implements IOrderServicePort {
             throw new IllegalArgumentException("El estado es obligatorio");
         }
 
+        Long restaurantId = getEmployeeRestaurantId(userContextPort.getCurrentUserId());
+        return orderPersistencePort.findByRestaurantIdAndStatus(restaurantId, status, page, size);
+    }
+
+    // HU13: el empleado se asigna un pedido PENDIENTE de su restaurante y lo pasa a EN_PREPARACION
+    @Override
+    public Order assignOrder(Long orderId) {
         Long employeeId = userContextPort.getCurrentUserId();
+        Long employeeRestaurantId = getEmployeeRestaurantId(employeeId);
+
+        Order order = orderPersistencePort.findById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("El pedido no existe");
+        }
+
+        if (!order.getRestaurantId().equals(employeeRestaurantId)) {
+            throw new OrderOutsideEmployeeRestaurantException();
+        }
+
+        if (order.getStatus() != OrderStatus.PENDIENTE) {
+            throw new InvalidOrderStatusException(
+                    "Solo se pueden asignar pedidos en estado PENDIENTE; este está en " + order.getStatus());
+        }
+
+        // Cambio atómico: solo funciona si nadie se adelantó entre la lectura y la escritura
+        boolean updated = orderPersistencePort.updateStatusAndChef(
+                orderId, OrderStatus.PENDIENTE, OrderStatus.EN_PREPARACION, employeeId);
+        if (!updated) {
+            throw new InvalidOrderStatusException("Otro empleado tomó este pedido antes que tú");
+        }
+
+        order.setChefId(employeeId);
+        order.setStatus(OrderStatus.EN_PREPARACION);
+        return order;
+    }
+
+    // ----- helpers -----
+
+    private Long getEmployeeRestaurantId(Long employeeId) {
         Long restaurantId = restaurantEmployeePersistencePort.findRestaurantIdByEmployeeId(employeeId);
         if (restaurantId == null) {
             throw new EmployeeWithoutRestaurantException();
         }
-
-        return orderPersistencePort.findByRestaurantIdAndStatus(restaurantId, status, page, size);
+        return restaurantId;
     }
 
     private void validateItems(Order order) {

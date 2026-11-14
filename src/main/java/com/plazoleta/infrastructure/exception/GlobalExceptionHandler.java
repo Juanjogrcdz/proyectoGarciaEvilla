@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.dao.DataIntegrityViolationException;
 import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
 import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
+import com.plazoleta.domain.exception.InvalidOrderStatusException;
+import com.plazoleta.domain.exception.OrderOutsideEmployeeRestaurantException;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,6 +56,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EmployeeWithoutRestaurantException.class)
     public ResponseEntity<Map<String, String>> handleEmployeeWithoutRestaurant(EmployeeWithoutRestaurantException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+    // 403: el pedido es de otro restaurante
+    @ExceptionHandler(OrderOutsideEmployeeRestaurantException.class)
+    public ResponseEntity<Map<String, String>> handleOrderOutsideRestaurant(OrderOutsideEmployeeRestaurantException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    // 409: el estado actual del pedido no permite esa operación
+    @ExceptionHandler(InvalidOrderStatusException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidOrderStatus(InvalidOrderStatusException ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
     }
     
 }

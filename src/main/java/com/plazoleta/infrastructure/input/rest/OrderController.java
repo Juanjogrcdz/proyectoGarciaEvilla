@@ -50,4 +50,11 @@ public class OrderController {
         return ResponseEntity.ok(orderResponseMapper.toResponseList(
                 orderServicePort.listOrdersByStatus(status, page, size)));
     }
+        // HU13: el empleado se asigna un pedido pendiente de su restaurante.
+    // Ej: PATCH /orders/1/assign
+    @PreAuthorize("hasRole('EMPLEADO')")
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<OrderResponseDto> assignOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderResponseMapper.toResponse(orderServicePort.assignOrder(id)));
+    }
 }

@@ -45,4 +45,19 @@ public class OrderAdapter implements IOrderPersistencePort {
                 .map(orderEntityMapper::toModel)
                 .toList();
     }
+        @Override
+    public Order findById(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return orderRepository.findById(id)
+                .map(orderEntityMapper::toModel)
+                .orElse(null);
+    }
+
+    @Override
+    public boolean updateStatusAndChef(Long orderId, OrderStatus expectedStatus,
+                                       OrderStatus newStatus, Long chefId) {
+        return orderRepository.updateStatusAndChef(orderId, expectedStatus, newStatus, chefId) == 1;
+    }
 }
