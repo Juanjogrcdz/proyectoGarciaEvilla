@@ -74,4 +74,12 @@ public class OrderAdapter implements IOrderPersistencePort {
     public boolean updateStatus(Long orderId, OrderStatus expectedStatus, OrderStatus newStatus) {
         return orderRepository.updateStatus(orderId, expectedStatus, newStatus) == 1;
     }
+
+    @Override
+    public List<Order> findAllByRestaurantIdAndStatus(Long restaurantId, OrderStatus status) {
+        return orderRepository.findAllByRestaurantIdAndStatus(restaurantId, status)
+                .stream()
+                .map(orderEntityMapper::toModel)
+                .toList();
+    }
 }

@@ -22,43 +22,45 @@ import com.plazoleta.domain.spi.IUserContextPort;
 import com.plazoleta.domain.spi.IUserPersistencePort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.plazoleta.application.usecase.OrderEfficiencyUseCase;
+import com.plazoleta.domain.api.IOrderEfficiencyServicePort;
 
 @Configuration
 public class BeanConfiguration {
 
     @Bean
     public IUserServicePort userServicePort(IUserPersistencePort userPersistencePort,
-                                            IPasswordEncoderPort passwordEncoderPort,
-                                            IRestaurantPersistencePort restaurantPersistencePort,
-                                            IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
-                                            IUserContextPort userContextPort) {
+            IPasswordEncoderPort passwordEncoderPort,
+            IRestaurantPersistencePort restaurantPersistencePort,
+            IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
+            IUserContextPort userContextPort) {
         return new UserUseCase(userPersistencePort, passwordEncoderPort, restaurantPersistencePort,
                 restaurantEmployeePersistencePort, userContextPort);
     }
 
     @Bean
     public IRestaurantServicePort restaurantServicePort(IRestaurantPersistencePort restaurantPersistencePort,
-                                                        IUserPersistencePort userPersistencePort) {
+            IUserPersistencePort userPersistencePort) {
         return new RestaurantUseCase(restaurantPersistencePort, userPersistencePort);
     }
 
     @Bean
     public IDishServicePort dishServicePort(IDishPersistencePort dishPersistencePort,
-                                            IRestaurantPersistencePort restaurantPersistencePort,
-                                            IUserContextPort userContextPort) {
+            IRestaurantPersistencePort restaurantPersistencePort,
+            IUserContextPort userContextPort) {
         return new DishUseCase(dishPersistencePort, restaurantPersistencePort, userContextPort);
     }
 
     @Bean
     public IOrderServicePort orderServicePort(IOrderPersistencePort orderPersistencePort,
-                                              IOrderTracePersistencePort orderTracePersistencePort,
-                                              IRestaurantPersistencePort restaurantPersistencePort,
-                                              IDishPersistencePort dishPersistencePort,
-                                              IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
-                                              IUserPersistencePort userPersistencePort,
-                                              IUserContextPort userContextPort,
-                                              INotificationPort notificationPort,
-                                              IPinGeneratorPort pinGeneratorPort) {
+            IOrderTracePersistencePort orderTracePersistencePort,
+            IRestaurantPersistencePort restaurantPersistencePort,
+            IDishPersistencePort dishPersistencePort,
+            IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
+            IUserPersistencePort userPersistencePort,
+            IUserContextPort userContextPort,
+            INotificationPort notificationPort,
+            IPinGeneratorPort pinGeneratorPort) {
         return new OrderUseCase(orderPersistencePort, orderTracePersistencePort, restaurantPersistencePort,
                 dishPersistencePort, restaurantEmployeePersistencePort, userPersistencePort,
                 userContextPort, notificationPort, pinGeneratorPort);
@@ -66,8 +68,19 @@ public class BeanConfiguration {
 
     @Bean
     public IOrderTraceServicePort orderTraceServicePort(IOrderPersistencePort orderPersistencePort,
-                                                        IOrderTracePersistencePort orderTracePersistencePort,
-                                                        IUserContextPort userContextPort) {
+            IOrderTracePersistencePort orderTracePersistencePort,
+            IUserContextPort userContextPort) {
         return new OrderTraceUseCase(orderPersistencePort, orderTracePersistencePort, userContextPort);
+    }
+
+    @Bean
+    public IOrderEfficiencyServicePort orderEfficiencyServicePort(
+            IOrderPersistencePort orderPersistencePort,
+            IOrderTracePersistencePort orderTracePersistencePort,
+            IRestaurantPersistencePort restaurantPersistencePort,
+            IUserPersistencePort userPersistencePort,
+            IUserContextPort userContextPort) {
+        return new OrderEfficiencyUseCase(orderPersistencePort, orderTracePersistencePort,
+                restaurantPersistencePort, userPersistencePort, userContextPort);
     }
 }

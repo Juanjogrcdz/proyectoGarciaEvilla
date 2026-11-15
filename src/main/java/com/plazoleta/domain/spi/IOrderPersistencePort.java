@@ -24,5 +24,8 @@ public interface IOrderPersistencePort {
 
     // HU15 (y HU16): cambia el estado SOLO si el pedido sigue en expectedStatus
     boolean updateStatus(Long orderId, OrderStatus expectedStatus, OrderStatus newStatus);
+
+        // Todos los pedidos del restaurante en ese estado, sin paginar (para calcular métricas)
+    List<Order> findAllByRestaurantIdAndStatus(Long restaurantId, OrderStatus status);
     
 }

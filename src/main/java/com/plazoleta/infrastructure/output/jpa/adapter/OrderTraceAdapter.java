@@ -5,6 +5,7 @@ import com.plazoleta.domain.spi.IOrderTracePersistencePort;
 import com.plazoleta.infrastructure.output.jpa.mapper.IOrderTraceEntityMapper;
 import com.plazoleta.infrastructure.output.jpa.repository.IOrderTraceRepository;
 import org.springframework.stereotype.Component;
+import java.util.Collection;
 
 import java.util.List;
 
@@ -29,5 +30,9 @@ public class OrderTraceAdapter implements IOrderTracePersistencePort {
     public List<OrderTrace> findByOrderIdOrderByChangedAtAsc(Long orderId) {
         return orderTraceEntityMapper.toModelList(
                 orderTraceRepository.findByOrderIdOrderByChangedAtAscIdAsc(orderId));
+    }
+    @Override
+    public List<OrderTrace> findByOrderIdIn(Collection<Long> orderIds) {
+        return orderTraceEntityMapper.toModelList(orderTraceRepository.findByOrderIdIn(orderIds));
     }
 }
