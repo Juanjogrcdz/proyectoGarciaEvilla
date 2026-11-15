@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.plazoleta.infrastructure.input.rest.dto.DeliverOrderRequestDto;
 
 import java.util.List;
 
@@ -24,8 +25,8 @@ public class OrderController {
     private final IOrderResponseMapper orderResponseMapper;
 
     public OrderController(IOrderServicePort orderServicePort,
-                           IOrderRequestMapper orderRequestMapper,
-                           IOrderResponseMapper orderResponseMapper) {
+            IOrderRequestMapper orderRequestMapper,
+            IOrderResponseMapper orderResponseMapper) {
         this.orderServicePort = orderServicePort;
         this.orderRequestMapper = orderRequestMapper;
         this.orderResponseMapper = orderResponseMapper;
@@ -50,11 +51,30 @@ public class OrderController {
         return ResponseEntity.ok(orderResponseMapper.toResponseList(
                 orderServicePort.listOrdersByStatus(status, page, size)));
     }
-        // HU13: el empleado se asigna un pedido pendiente de su restaurante.
+
+    // HU13: el empleado se asigna un pedido pendiente de su restaurante.
     // Ej: PATCH /orders/1/assign
     @PreAuthorize("hasRole('EMPLEADO')")
     @PatchMapping("/{id}/assign")
     public ResponseEntity<OrderResponseDto> assignOrder(@PathVariable Long id) {
         return ResponseEntity.ok(orderResponseMapper.toResponse(orderServicePort.assignOrder(id)));
+    }
+
+    // HU14: el empleado marca el pedido como LISTO (se notifica al cliente por SMS
+    // con el PIN).
+    // Ej: PATCH /orders/1/ready
+    @PreAuthorize("hasRole('EMPLEADO')")
+    @PatchMapping("/{id}/ready")
+    public ResponseEntity<OrderResponseDto> markOrderReady(@PathVariable Long id) {
+        return ResponseEntity.ok(orderResponseMapper.toResponse(orderServicePort.markOrderReady(id)));
+    }
+
+    // HU15: el empleado entrega el pedido digitando el PIN del cliente.
+    // Ej: PATCH /orders/1/deliver body: { "pin": "123456" }
+    @PreAuthorize("hasRole('EMPLEADO')")
+    @PatchMapping("/{id}/deliver")
+    public ResponseEntity<OrderResponseDto> deliverOrder(@PathVariable Long id,
+            @Valid @RequestBody DeliverOrderRequestDto dto) {
+        return ResponseEntity.ok(orderResponseMapper.toResponse(orderServicePort.deliverOrder(id, dto.getPin())));
     }
 }

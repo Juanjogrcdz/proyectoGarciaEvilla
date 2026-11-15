@@ -11,6 +11,8 @@ public class Order {
     private OrderStatus status;
     private LocalDateTime createdAt;
     private List<OrderItem> items;
+    private String pin;     // PIN de seguridad; se genera al pasar a LISTO. Nunca se expone en la API.
+
 
     public Order() {
     }
@@ -29,4 +31,6 @@ public class Order {
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public List<OrderItem> getItems() { return items; }
     public void setItems(List<OrderItem> items) { this.items = items; }
+    public String getPin() { return pin; }
+    public void setPin(String pin) { this.pin = pin; }
 }

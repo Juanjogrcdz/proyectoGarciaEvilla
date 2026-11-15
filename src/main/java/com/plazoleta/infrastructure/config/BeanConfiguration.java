@@ -9,8 +9,10 @@ import com.plazoleta.domain.api.IOrderServicePort;
 import com.plazoleta.domain.api.IRestaurantServicePort;
 import com.plazoleta.domain.api.IUserServicePort;
 import com.plazoleta.domain.spi.IDishPersistencePort;
+import com.plazoleta.domain.spi.INotificationPort;
 import com.plazoleta.domain.spi.IOrderPersistencePort;
 import com.plazoleta.domain.spi.IPasswordEncoderPort;
+import com.plazoleta.domain.spi.IPinGeneratorPort;
 import com.plazoleta.domain.spi.IRestaurantEmployeePersistencePort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserContextPort;
@@ -49,8 +51,12 @@ public class BeanConfiguration {
                                               IRestaurantPersistencePort restaurantPersistencePort,
                                               IDishPersistencePort dishPersistencePort,
                                               IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
-                                              IUserContextPort userContextPort) {
+                                              IUserPersistencePort userPersistencePort,
+                                              IUserContextPort userContextPort,
+                                              INotificationPort notificationPort,
+                                              IPinGeneratorPort pinGeneratorPort) {
         return new OrderUseCase(orderPersistencePort, restaurantPersistencePort, dishPersistencePort,
-                restaurantEmployeePersistencePort, userContextPort);
+                restaurantEmployeePersistencePort, userPersistencePort, userContextPort,
+                notificationPort, pinGeneratorPort);
     }
 }

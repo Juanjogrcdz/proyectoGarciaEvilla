@@ -9,11 +9,16 @@ import com.plazoleta.domain.model.Dish;
 import com.plazoleta.domain.model.Order;
 import com.plazoleta.domain.model.OrderItem;
 import com.plazoleta.domain.model.OrderStatus;
+import com.plazoleta.domain.model.Restaurant;
+import com.plazoleta.domain.model.User;
 import com.plazoleta.domain.spi.IDishPersistencePort;
+import com.plazoleta.domain.spi.INotificationPort;
 import com.plazoleta.domain.spi.IOrderPersistencePort;
+import com.plazoleta.domain.spi.IPinGeneratorPort;
 import com.plazoleta.domain.spi.IRestaurantEmployeePersistencePort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
 import com.plazoleta.domain.spi.IUserContextPort;
+import com.plazoleta.domain.spi.IUserPersistencePort;
 import com.plazoleta.domain.validation.PaginationValidator;
 
 import java.time.LocalDateTime;
@@ -27,18 +32,27 @@ public class OrderUseCase implements IOrderServicePort {
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IDishPersistencePort dishPersistencePort;
     private final IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort;
+    private final IUserPersistencePort userPersistencePort;
     private final IUserContextPort userContextPort;
+    private final INotificationPort notificationPort;
+    private final IPinGeneratorPort pinGeneratorPort;
 
     public OrderUseCase(IOrderPersistencePort orderPersistencePort,
                         IRestaurantPersistencePort restaurantPersistencePort,
                         IDishPersistencePort dishPersistencePort,
                         IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
-                        IUserContextPort userContextPort) {
+                        IUserPersistencePort userPersistencePort,
+                        IUserContextPort userContextPort,
+                        INotificationPort notificationPort,
+                        IPinGeneratorPort pinGeneratorPort) {
         this.orderPersistencePort = orderPersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
+        this.userPersistencePort = userPersistencePort;
         this.userContextPort = userContextPort;
+        this.notificationPort = notificationPort;
+        this.pinGeneratorPort = pinGeneratorPort;
     }
 
     // HU11
@@ -81,27 +95,13 @@ public class OrderUseCase implements IOrderServicePort {
         return orderPersistencePort.findByRestaurantIdAndStatus(restaurantId, status, page, size);
     }
 
-    // HU13: el empleado se asigna un pedido PENDIENTE de su restaurante y lo pasa a EN_PREPARACION
+    // HU13: PENDIENTE -> EN_PREPARACION, quedando el empleado como responsable
     @Override
     public Order assignOrder(Long orderId) {
         Long employeeId = userContextPort.getCurrentUserId();
-        Long employeeRestaurantId = getEmployeeRestaurantId(employeeId);
+        Order order = getOrderForEmployee(orderId);
+        requireStatus(order, OrderStatus.PENDIENTE, "asignar");
 
-        Order order = orderPersistencePort.findById(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("El pedido no existe");
-        }
-
-        if (!order.getRestaurantId().equals(employeeRestaurantId)) {
-            throw new OrderOutsideEmployeeRestaurantException();
-        }
-
-        if (order.getStatus() != OrderStatus.PENDIENTE) {
-            throw new InvalidOrderStatusException(
-                    "Solo se pueden asignar pedidos en estado PENDIENTE; este está en " + order.getStatus());
-        }
-
-        // Cambio atómico: solo funciona si nadie se adelantó entre la lectura y la escritura
         boolean updated = orderPersistencePort.updateStatusAndChef(
                 orderId, OrderStatus.PENDIENTE, OrderStatus.EN_PREPARACION, employeeId);
         if (!updated) {
@@ -113,7 +113,80 @@ public class OrderUseCase implements IOrderServicePort {
         return order;
     }
 
+    // HU14: EN_PREPARACION -> LISTO, y se avisa al cliente por SMS con el PIN
+    @Override
+    public Order markOrderReady(Long orderId) {
+        Order order = getOrderForEmployee(orderId);
+        requireStatus(order, OrderStatus.EN_PREPARACION, "marcar como listos");
+
+        // Se verifica ANTES de cambiar el estado, para no dejar el pedido LISTO sin poder avisar
+        User client = userPersistencePort.findById(order.getClientId());
+        if (client == null || client.getPhone() == null || client.getPhone().isBlank()) {
+            throw new IllegalStateException("No se encontró el teléfono del cliente del pedido");
+        }
+
+        String pin = pinGeneratorPort.generatePin();
+
+        boolean updated = orderPersistencePort.updateStatusAndPin(
+                orderId, OrderStatus.EN_PREPARACION, OrderStatus.LISTO, pin);
+        if (!updated) {
+            throw new InvalidOrderStatusException(
+                    "El pedido cambió de estado mientras lo procesabas; vuelve a consultarlo");
+        }
+
+        Restaurant restaurant = restaurantPersistencePort.findById(order.getRestaurantId());
+        String restaurantName = (restaurant != null) ? restaurant.getName() : "tu restaurante";
+        notificationPort.sendSms(client.getPhone(),
+                "Tu pedido #" + orderId + " de " + restaurantName
+                        + " está listo. PIN de entrega: " + pin);
+
+        order.setStatus(OrderStatus.LISTO);
+        order.setPin(pin);
+        return order;
+    }
+
+    // HU15: LISTO -> ENTREGADO, solo con el PIN que recibió el cliente
+    @Override
+    public Order deliverOrder(Long orderId, String pin) {
+        Order order = getOrderForEmployee(orderId);
+        requireStatus(order, OrderStatus.LISTO, "entregar");
+
+        if (pin == null || !pin.equals(order.getPin())) {
+            throw new IllegalArgumentException("El PIN de seguridad es incorrecto");
+        }
+
+        boolean updated = orderPersistencePort.updateStatus(orderId, OrderStatus.LISTO, OrderStatus.ENTREGADO);
+        if (!updated) {
+            throw new InvalidOrderStatusException(
+                    "El pedido cambió de estado mientras lo procesabas; vuelve a consultarlo");
+        }
+
+        order.setStatus(OrderStatus.ENTREGADO);
+        return order;
+    }
+
     // ----- helpers -----
+
+    // Pedido que existe Y pertenece al restaurante donde trabaja el empleado que hace la petición
+    private Order getOrderForEmployee(Long orderId) {
+        Long employeeRestaurantId = getEmployeeRestaurantId(userContextPort.getCurrentUserId());
+
+        Order order = orderPersistencePort.findById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("El pedido no existe");
+        }
+        if (!order.getRestaurantId().equals(employeeRestaurantId)) {
+            throw new OrderOutsideEmployeeRestaurantException();
+        }
+        return order;
+    }
+
+    private void requireStatus(Order order, OrderStatus expected, String action) {
+        if (order.getStatus() != expected) {
+            throw new InvalidOrderStatusException("Solo se pueden " + action
+                    + " pedidos en estado " + expected + "; este está en " + order.getStatus());
+        }
+    }
 
     private Long getEmployeeRestaurantId(Long employeeId) {
         Long restaurantId = restaurantEmployeePersistencePort.findRestaurantIdByEmployeeId(employeeId);

@@ -14,5 +14,6 @@ public interface IOrderRequestMapper {
     @Mapping(target = "status", ignore = true)      // lo fija el caso de uso (PENDIENTE)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(source = "dishes", target = "items")
+    @Mapping(target = "pin", ignore = true)
     Order toOrder(OrderRequestDto dto);
 }

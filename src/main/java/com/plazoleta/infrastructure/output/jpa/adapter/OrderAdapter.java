@@ -27,16 +27,18 @@ public class OrderAdapter implements IOrderPersistencePort {
     @Override
     public Order saveOrder(Order order) {
         OrderEntity saved = orderRepository.save(orderEntityMapper.toEntity(order));
-        return orderEntityMapper.toModel(saved);   // ya trae el id generado
+        return orderEntityMapper.toModel(saved); // ya trae el id generado
     }
 
     @Override
     public boolean existsByClientIdAndStatusIn(Long clientId, List<OrderStatus> statuses) {
         return orderRepository.existsByClientIdAndStatusIn(clientId, statuses);
     }
-      @Override
+
+    @Override
     public List<Order> findByRestaurantIdAndStatus(Long restaurantId, OrderStatus status, int page, int size) {
-        // Del más antiguo al más reciente: es una cola, el primero en llegar se atiende primero
+        // Del más antiguo al más reciente: es una cola, el primero en llegar se atiende
+        // primero
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.asc("createdAt")));
 
         return orderRepository.findByRestaurantIdAndStatus(restaurantId, status, pageable)
@@ -45,7 +47,8 @@ public class OrderAdapter implements IOrderPersistencePort {
                 .map(orderEntityMapper::toModel)
                 .toList();
     }
-        @Override
+
+    @Override
     public Order findById(Long id) {
         if (id == null) {
             return null;
@@ -57,7 +60,18 @@ public class OrderAdapter implements IOrderPersistencePort {
 
     @Override
     public boolean updateStatusAndChef(Long orderId, OrderStatus expectedStatus,
-                                       OrderStatus newStatus, Long chefId) {
+            OrderStatus newStatus, Long chefId) {
         return orderRepository.updateStatusAndChef(orderId, expectedStatus, newStatus, chefId) == 1;
+    }
+
+    @Override
+    public boolean updateStatusAndPin(Long orderId, OrderStatus expectedStatus,
+            OrderStatus newStatus, String pin) {
+        return orderRepository.updateStatusAndPin(orderId, expectedStatus, newStatus, pin) == 1;
+    }
+
+    @Override
+    public boolean updateStatus(Long orderId, OrderStatus expectedStatus, OrderStatus newStatus) {
+        return orderRepository.updateStatus(orderId, expectedStatus, newStatus) == 1;
     }
 }

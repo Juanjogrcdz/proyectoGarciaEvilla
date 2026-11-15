@@ -11,6 +11,8 @@ import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
 import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
 import com.plazoleta.domain.exception.InvalidOrderStatusException;
 import com.plazoleta.domain.exception.OrderOutsideEmployeeRestaurantException;
+import com.plazoleta.domain.exception.NotificationFailedException;
+
 
 
 import java.util.HashMap;
@@ -67,6 +69,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidOrderStatusException.class)
     public ResponseEntity<Map<String, String>> handleInvalidOrderStatus(InvalidOrderStatusException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+    // 502: el pedido ya cambió de estado, pero el proveedor de SMS falló
+    @ExceptionHandler(NotificationFailedException.class)
+    public ResponseEntity<Map<String, String>> handleNotificationFailed(NotificationFailedException ex) {
+        return build(HttpStatus.BAD_GATEWAY,
+                "El pedido quedó marcado como LISTO, pero no se pudo enviar el SMS al cliente");
     }
     
 }

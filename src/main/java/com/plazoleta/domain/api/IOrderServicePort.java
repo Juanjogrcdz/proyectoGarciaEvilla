@@ -8,4 +8,6 @@ public interface IOrderServicePort {
     Order saveOrder(Order order);   // HU11
     List<Order> listOrdersByStatus(OrderStatus status, int page, int size);   // HU12
     Order assignOrder(Long orderId);   // HU13
+    Order markOrderReady(Long orderId);              // HU14
+    Order deliverOrder(Long orderId, String pin);    // HU15
 }
