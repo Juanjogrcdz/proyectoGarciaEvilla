@@ -77,4 +77,12 @@ public class OrderController {
             @Valid @RequestBody DeliverOrderRequestDto dto) {
         return ResponseEntity.ok(orderResponseMapper.toResponse(orderServicePort.deliverOrder(id, dto.getPin())));
     }
+
+    // HU16: el cliente cancela su pedido si todavía está PENDIENTE.
+    // Ej: PATCH /orders/1/cancel
+    @PreAuthorize("hasRole('CLIENTE')")
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<OrderResponseDto> cancelOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderResponseMapper.toResponse(orderServicePort.cancelOrder(id)));
+    }
 }

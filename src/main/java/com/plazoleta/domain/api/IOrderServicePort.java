@@ -10,4 +10,5 @@ public interface IOrderServicePort {
     Order assignOrder(Long orderId);   // HU13
     Order markOrderReady(Long orderId);              // HU14
     Order deliverOrder(Long orderId, String pin);    // HU15
+    Order cancelOrder(Long orderId);   // HU16
 }

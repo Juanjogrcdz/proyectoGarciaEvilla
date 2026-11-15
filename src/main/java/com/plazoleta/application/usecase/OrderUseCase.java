@@ -4,16 +4,19 @@ import com.plazoleta.domain.api.IOrderServicePort;
 import com.plazoleta.domain.exception.ClientHasOrderInProgressException;
 import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
 import com.plazoleta.domain.exception.InvalidOrderStatusException;
+import com.plazoleta.domain.exception.OrderNotOwnedByClientException;
 import com.plazoleta.domain.exception.OrderOutsideEmployeeRestaurantException;
 import com.plazoleta.domain.model.Dish;
 import com.plazoleta.domain.model.Order;
 import com.plazoleta.domain.model.OrderItem;
 import com.plazoleta.domain.model.OrderStatus;
+import com.plazoleta.domain.model.OrderTrace;
 import com.plazoleta.domain.model.Restaurant;
 import com.plazoleta.domain.model.User;
 import com.plazoleta.domain.spi.IDishPersistencePort;
 import com.plazoleta.domain.spi.INotificationPort;
 import com.plazoleta.domain.spi.IOrderPersistencePort;
+import com.plazoleta.domain.spi.IOrderTracePersistencePort;
 import com.plazoleta.domain.spi.IPinGeneratorPort;
 import com.plazoleta.domain.spi.IRestaurantEmployeePersistencePort;
 import com.plazoleta.domain.spi.IRestaurantPersistencePort;
@@ -28,7 +31,11 @@ import java.util.Set;
 
 public class OrderUseCase implements IOrderServicePort {
 
+    private static final String CANNOT_CANCEL_MESSAGE =
+            "Lo sentimos, tu pedido ya está en preparación y no puede cancelarse";
+
     private final IOrderPersistencePort orderPersistencePort;
+    private final IOrderTracePersistencePort orderTracePersistencePort;
     private final IRestaurantPersistencePort restaurantPersistencePort;
     private final IDishPersistencePort dishPersistencePort;
     private final IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort;
@@ -38,6 +45,7 @@ public class OrderUseCase implements IOrderServicePort {
     private final IPinGeneratorPort pinGeneratorPort;
 
     public OrderUseCase(IOrderPersistencePort orderPersistencePort,
+                        IOrderTracePersistencePort orderTracePersistencePort,
                         IRestaurantPersistencePort restaurantPersistencePort,
                         IDishPersistencePort dishPersistencePort,
                         IRestaurantEmployeePersistencePort restaurantEmployeePersistencePort,
@@ -46,6 +54,7 @@ public class OrderUseCase implements IOrderServicePort {
                         INotificationPort notificationPort,
                         IPinGeneratorPort pinGeneratorPort) {
         this.orderPersistencePort = orderPersistencePort;
+        this.orderTracePersistencePort = orderTracePersistencePort;
         this.restaurantPersistencePort = restaurantPersistencePort;
         this.dishPersistencePort = dishPersistencePort;
         this.restaurantEmployeePersistencePort = restaurantEmployeePersistencePort;
@@ -79,7 +88,9 @@ public class OrderUseCase implements IOrderServicePort {
         order.setStatus(OrderStatus.PENDIENTE);
         order.setCreatedAt(LocalDateTime.now());
 
-        return orderPersistencePort.saveOrder(order);
+        Order saved = orderPersistencePort.saveOrder(order);
+        registerTrace(saved, null, OrderStatus.PENDIENTE, clientId);   // HU17: nace el pedido
+        return saved;
     }
 
     // HU12: el empleado ve SOLO los pedidos del restaurante donde trabaja
@@ -108,6 +119,8 @@ public class OrderUseCase implements IOrderServicePort {
             throw new InvalidOrderStatusException("Otro empleado tomó este pedido antes que tú");
         }
 
+        registerTrace(order, OrderStatus.PENDIENTE, OrderStatus.EN_PREPARACION, employeeId);
+
         order.setChefId(employeeId);
         order.setStatus(OrderStatus.EN_PREPARACION);
         return order;
@@ -116,6 +129,7 @@ public class OrderUseCase implements IOrderServicePort {
     // HU14: EN_PREPARACION -> LISTO, y se avisa al cliente por SMS con el PIN
     @Override
     public Order markOrderReady(Long orderId) {
+        Long employeeId = userContextPort.getCurrentUserId();
         Order order = getOrderForEmployee(orderId);
         requireStatus(order, OrderStatus.EN_PREPARACION, "marcar como listos");
 
@@ -134,6 +148,8 @@ public class OrderUseCase implements IOrderServicePort {
                     "El pedido cambió de estado mientras lo procesabas; vuelve a consultarlo");
         }
 
+        registerTrace(order, OrderStatus.EN_PREPARACION, OrderStatus.LISTO, employeeId);
+
         Restaurant restaurant = restaurantPersistencePort.findById(order.getRestaurantId());
         String restaurantName = (restaurant != null) ? restaurant.getName() : "tu restaurante";
         notificationPort.sendSms(client.getPhone(),
@@ -148,6 +164,7 @@ public class OrderUseCase implements IOrderServicePort {
     // HU15: LISTO -> ENTREGADO, solo con el PIN que recibió el cliente
     @Override
     public Order deliverOrder(Long orderId, String pin) {
+        Long employeeId = userContextPort.getCurrentUserId();
         Order order = getOrderForEmployee(orderId);
         requireStatus(order, OrderStatus.LISTO, "entregar");
 
@@ -161,11 +178,48 @@ public class OrderUseCase implements IOrderServicePort {
                     "El pedido cambió de estado mientras lo procesabas; vuelve a consultarlo");
         }
 
+        registerTrace(order, OrderStatus.LISTO, OrderStatus.ENTREGADO, employeeId);
+
         order.setStatus(OrderStatus.ENTREGADO);
         return order;
     }
 
+    // HU16: el cliente cancela SU pedido, solo si sigue PENDIENTE
+    @Override
+    public Order cancelOrder(Long orderId) {
+        Long clientId = userContextPort.getCurrentUserId();
+
+        Order order = orderPersistencePort.findById(orderId);
+        if (order == null) {
+            throw new IllegalArgumentException("El pedido no existe");
+        }
+        if (!order.getClientId().equals(clientId)) {
+            throw new OrderNotOwnedByClientException();
+        }
+        if (order.getStatus() != OrderStatus.PENDIENTE) {
+            throw new InvalidOrderStatusException(CANNOT_CANCEL_MESSAGE);
+        }
+
+        // Atómico: si un empleado lo tomó justo ahora, el cambio no se aplica y el mensaje es el correcto
+        boolean updated = orderPersistencePort.updateStatus(
+                orderId, OrderStatus.PENDIENTE, OrderStatus.CANCELADO);
+        if (!updated) {
+            throw new InvalidOrderStatusException(CANNOT_CANCEL_MESSAGE);
+        }
+
+        registerTrace(order, OrderStatus.PENDIENTE, OrderStatus.CANCELADO, clientId);
+
+        order.setStatus(OrderStatus.CANCELADO);
+        return order;
+    }
+
     // ----- helpers -----
+
+    // HU17: deja constancia de cada cambio de estado
+    private void registerTrace(Order order, OrderStatus previous, OrderStatus current, Long changedBy) {
+        orderTracePersistencePort.saveTrace(new OrderTrace(
+                order.getId(), order.getClientId(), previous, current, changedBy, LocalDateTime.now()));
+    }
 
     // Pedido que existe Y pertenece al restaurante donde trabaja el empleado que hace la petición
     private Order getOrderForEmployee(Long orderId) {

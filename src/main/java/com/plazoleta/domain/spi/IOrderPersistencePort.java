@@ -24,4 +24,5 @@ public interface IOrderPersistencePort {
 
     // HU15 (y HU16): cambia el estado SOLO si el pedido sigue en expectedStatus
     boolean updateStatus(Long orderId, OrderStatus expectedStatus, OrderStatus newStatus);
+    
 }

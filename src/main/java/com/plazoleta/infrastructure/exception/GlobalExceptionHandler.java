@@ -12,8 +12,7 @@ import com.plazoleta.domain.exception.EmployeeWithoutRestaurantException;
 import com.plazoleta.domain.exception.InvalidOrderStatusException;
 import com.plazoleta.domain.exception.OrderOutsideEmployeeRestaurantException;
 import com.plazoleta.domain.exception.NotificationFailedException;
-
-
+import com.plazoleta.domain.exception.OrderNotOwnedByClientException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,21 +46,24 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT,
                 "Los datos ya existen o violan una restricción (¿correo o documento repetido?)");
     }
-    
 
-    // 409: el pedido choca con el estado actual del cliente (ya tiene uno en proceso)
+    // 409: el pedido choca con el estado actual del cliente (ya tiene uno en
+    // proceso)
     @ExceptionHandler(ClientHasOrderInProgressException.class)
     public ResponseEntity<Map<String, String>> handleOrderInProgress(ClientHasOrderInProgressException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
+
     // 403: es un empleado, pero todavía no está asignado a ningún restaurante
     @ExceptionHandler(EmployeeWithoutRestaurantException.class)
     public ResponseEntity<Map<String, String>> handleEmployeeWithoutRestaurant(EmployeeWithoutRestaurantException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
+
     // 403: el pedido es de otro restaurante
     @ExceptionHandler(OrderOutsideEmployeeRestaurantException.class)
-    public ResponseEntity<Map<String, String>> handleOrderOutsideRestaurant(OrderOutsideEmployeeRestaurantException ex) {
+    public ResponseEntity<Map<String, String>> handleOrderOutsideRestaurant(
+            OrderOutsideEmployeeRestaurantException ex) {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
@@ -70,11 +72,17 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleInvalidOrderStatus(InvalidOrderStatusException ex) {
         return build(HttpStatus.CONFLICT, ex.getMessage());
     }
+
     // 502: el pedido ya cambió de estado, pero el proveedor de SMS falló
     @ExceptionHandler(NotificationFailedException.class)
     public ResponseEntity<Map<String, String>> handleNotificationFailed(NotificationFailedException ex) {
         return build(HttpStatus.BAD_GATEWAY,
                 "El pedido quedó marcado como LISTO, pero no se pudo enviar el SMS al cliente");
     }
-    
+
+    @ExceptionHandler(OrderNotOwnedByClientException.class)
+    public ResponseEntity<Map<String, String>> handleOrderNotOwned(OrderNotOwnedByClientException ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
 }
